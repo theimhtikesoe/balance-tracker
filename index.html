@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Balance Tracker</title>
+  <style>
+    body { font-family: "Segoe UI", sans-serif; margin: 20px; background: linear-gradient(135deg,#0f0f0f,#1a1a1a); color: #eee; }
+    h1 { text-align: center; color: #00ff99; text-shadow: 0 0 10px #00ff99; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; border-radius: 8px; overflow: hidden; }
+    th, td { border: 1px solid #333; padding: 10px; text-align: center; }
+    th { background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); color: #ffcc00; cursor: pointer; }
+    tr:hover { background: rgba(255,255,255,0.05); }
+    .btn { background: #00ff99; color: #111; padding: 8px 12px; border: none; cursor: pointer; border-radius: 4px; transition: 0.2s; }
+    .btn:hover { transform: scale(1.05); box-shadow: 0 0 10px #00ff99; }
+    .btn-delete { background: #ff4444; color: white; }
+    .btn-delete:hover { box-shadow: 0 0 10px #ff4444; }
+    .form-box { display: none; background: rgba(0,0,0,0.7); padding: 20px; margin: 15px 0; border-radius: 10px; backdrop-filter: blur(15px); }
+    input, select { padding: 8px; margin: 5px; border-radius: 5px; border: none; outline: none; }
+    #profit, #summary { font-size: 1.1em; margin-top: 15px; text-align: right; }
+    #summary span { margin-right: 15px; }
+  </style>
+</head>
+<body>
+  <h1>💰 Balance Tracker</h1>
+
+  <button class="btn" onclick="toggleForm()">+ Add New</button>
+
+  <div class="form-box" id="formBox">
+    <input type="date" id="date">
+    <input type="text" id="category" placeholder="Category (Cash, KBZPay, etc.)">
+    <select id="type">
+      <option value="Income">Income</option>
+      <option value="Expense">Expense</option>
+    </select>
+    <input type="number" id="amount" placeholder="Amount">
+    <input type="text" id="note" placeholder="Note">
+    <button class="btn" id="saveBtn" onclick="saveEntry()">Save</button>
+    <button class="btn btn-delete" onclick="toggleForm()">Cancel</button>
+  </div>
+
+  <table id="recordTable">
+    <thead>
+      <tr>
+        <th onclick="sortTable(0)">Date</th>
+        <th onclick="sortTable(1)">Category</th>
+        <th onclick="sortTable(2)">Type</th>
+        <th onclick="sortTable(3)">Amount</th>
+        <th>Note</th>
+        <th>Balance</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <div id="summary"></div>
+  <div id="profit">Net Profit/Loss: 0</div>
+
+  <script>
+    let records = [
+      {date: "2025-09-10", category: "Cash (THB)", type: "Income", amount: 11849, note: "Wallet balance"},
+      {date: "2025-09-10", category: "KBZPay (MMK)", type: "Income", amount: 275230, note: "KBZPay balance"},
+      {date: "2025-09-10", category: "Binance (USDT)", type: "Income", amount: 76, note: "USDT balance"},
+      {date: "2025-09-10", category: "Binance (WLD)", type: "Income", amount: 75, note: "≈39 WLD coin value in USDT"},
+      {date: "2025-09-10", category: "Pexx Mastercard (USD)", type: "Income", amount: 9.13, note: "Card balance"}
+    ];
+
+    let editIndex = -1;
+
+    function toggleForm(index=null) {
+      let box = document.getElementById("formBox");
+      if (index !== null) {
+        let r = records[index];
+        document.getElementById("date").value = r.date;
+        document.getElementById("category").value = r.category;
+        document.getElementById("type").value = r.type;
+        document.getElementById("amount").value = r.amount;
+        document.getElementById("note").value = r.note;
+        editIndex = index;
+        document.getElementById("saveBtn").innerText = "Update";
+      } else {
+        document.getElementById("date").value = "";
+        document.getElementById("category").value = "";
+        document.getElementById("type").value = "Income";
+        document.getElementById("amount").value = "";
+        document.getElementById("note").value = "";
+        editIndex = -1;
+        document.getElementById("saveBtn").innerText = "Save";
+      }
+      box.style.display = (box.style.display === "block") ? "none" : "block";
+    }
+
+    function saveEntry() {
+      let date = document.getElementById("date").value;
+      let category = document.getElementById("category").value;
+      let type = document.getElementById("type").value;
+      let amount = parseFloat(document.getElementById("amount").value);
+      let note = document.getElementById("note").value;
+
+      if (!date || !category || isNaN(amount)) {
+        alert("Please fill all fields!");
+        return;
+      }
+
+      let entry = {date, category, type, amount, note};
+
+      if (editIndex >= 0) {
+        records[editIndex] = entry;
+        editIndex = -1;
+      } else {
+        records.push(entry);
+      }
+
+      renderTable();
+      toggleForm();
+    }
+
+    function deleteEntry(index) {
+      if (confirm("Delete this entry?")) {
+        records.splice(index, 1);
+        renderTable();
+      }
+    }
+
+    function sortTable(col) {
+      records.sort((a,b)=>{
+        let v1 = Object.values(a)[col], v2 = Object.values(b)[col];
+        return (typeof v1 === "number") ? v1 - v2 : (""+v1).localeCompare(""+v2);
+      });
+      renderTable();
+    }
+
+    function renderTable() {
+      let tbody = document.querySelector("#recordTable tbody");
+      tbody.innerHTML = "";
+      let balance = 0, income = 0, expense = 0;
+
+      records.forEach((r,index)=>{
+        if (r.type === "Income") { balance += r.amount; income += r.amount; }
+        else { balance -= r.amount; expense += r.amount; }
+
+        tbody.innerHTML += `
+          <tr>
+            <td>${r.date}</td>
+            <td>${r.category}</td>
+            <td>${r.type}</td>
+            <td>${r.amount}</td>
+            <td>${r.note}</td>
+            <td>${balance}</td>
+            <td>
+              <button class="btn" onclick="toggleForm(${index})">Edit</button>
+              <button class="btn btn-delete" onclick="deleteEntry(${index})">Delete</button>
+            </td>
+          </tr>`;
+      });
+
+      document.getElementById("summary").innerHTML =
+        `<span>Income: ${income}</span><span>Expenses: ${expense}</span><span>Total Balance: ${balance}</span>`;
+      document.getElementById("profit").innerText = "Net Profit/Loss: " + (income - expense);
+    }
+
+    renderTable();
+  </script>
+</body>
+</html>

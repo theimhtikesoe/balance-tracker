@@ -27,7 +27,14 @@
 
   <div class="form-box" id="formBox">
     <input type="date" id="date">
-    <input type="text" id="category" placeholder="Category (Cash, KBZPay, etc.)">
+    <select id="category">
+      <option value="">-- Select Category --</option>
+      <option value="Cash (THB)">Cash (THB)</option>
+      <option value="KBZPay (MMK)">KBZPay (MMK)</option>
+      <option value="Binance (USDT)">Binance (USDT)</option>
+      <option value="Binance (WLD)">Binance (WLD)</option>
+      <option value="Pexx Mastercard (USD)">Pexx Mastercard (USD)</option>
+    </select>
     <select id="type">
       <option value="Income">Income</option>
       <option value="Expense">Expense</option>
@@ -41,10 +48,10 @@
   <table id="recordTable">
     <thead>
       <tr>
-        <th onclick="sortTable(0)">Date</th>
-        <th onclick="sortTable(1)">Category</th>
-        <th onclick="sortTable(2)">Type</th>
-        <th onclick="sortTable(3)">Amount</th>
+        <th>Date</th>
+        <th>Category</th>
+        <th>Type</th>
+        <th>Amount</th>
         <th>Note</th>
         <th>Balance</th>
         <th>Actions</th>
@@ -57,8 +64,15 @@
   <div id="profit">Net Profit/Loss: 0</div>
 
   <script>
-    // Start with an empty dataset
-    let records = [];
+    // Preload with your first dataset (10 Sep 2025)
+    let records = [
+      {date: "2025-09-10", category: "Cash (THB)", type: "Income", amount: 11849, note: "Wallet balance"},
+      {date: "2025-09-10", category: "KBZPay (MMK)", type: "Income", amount: 275230, note: "KBZPay balance"},
+      {date: "2025-09-10", category: "Binance (USDT)", type: "Income", amount: 76, note: "USDT balance"},
+      {date: "2025-09-10", category: "Binance (WLD)", type: "Income", amount: 39, note: "WLD coins"},
+      {date: "2025-09-10", category: "Pexx Mastercard (USD)", type: "Income", amount: 9.13, note: "Card balance"}
+    ];
+
     let editIndex = -1;
 
     function toggleForm(index=null) {
@@ -116,14 +130,6 @@
       }
     }
 
-    function sortTable(col) {
-      records.sort((a,b)=>{
-        let v1 = Object.values(a)[col], v2 = Object.values(b)[col];
-        return (typeof v1 === "number") ? v1 - v2 : (""+v1).localeCompare(""+v2);
-      });
-      renderTable();
-    }
-
     function renderTable() {
       let tbody = document.querySelector("#recordTable tbody");
       tbody.innerHTML = "";
@@ -149,7 +155,9 @@
       });
 
       document.getElementById("summary").innerHTML =
-        `<span>Income: ${income}</span><span>Expenses: ${expense}</span><span>Total Balance: ${balance}</span>`;
+        `<span>Total Income: ${income}</span> 
+         <span>Total Expenses: ${expense}</span> 
+         <span>Total Balance: ${balance}</span>`;
       document.getElementById("profit").innerText = "Net Profit/Loss: " + (income - expense);
     }
 

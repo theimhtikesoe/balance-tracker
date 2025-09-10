@@ -57,14 +57,8 @@
   <div id="profit">Net Profit/Loss: 0</div>
 
   <script>
-    let records = [
-      {date: "2025-09-10", category: "Cash (THB)", type: "Income", amount: 11849, note: "Wallet balance"},
-      {date: "2025-09-10", category: "KBZPay (MMK)", type: "Income", amount: 275230, note: "KBZPay balance"},
-      {date: "2025-09-10", category: "Binance (USDT)", type: "Income", amount: 76, note: "USDT balance"},
-      {date: "2025-09-10", category: "Binance (WLD)", type: "Income", amount: 75, note: "≈39 WLD coin value in USDT"},
-      {date: "2025-09-10", category: "Pexx Mastercard (USD)", type: "Income", amount: 9.13, note: "Card balance"}
-    ];
-
+    // Start with an empty dataset
+    let records = [];
     let editIndex = -1;
 
     function toggleForm(index=null) {

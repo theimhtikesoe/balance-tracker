@@ -1,167 +1,475 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Balance Tracker</title>
+  <meta charset="UTF-8" />
+  <title>Balance Tracker — Multi-Currency + P&L</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body { font-family: "Segoe UI", sans-serif; margin: 20px; background: linear-gradient(135deg,#0f0f0f,#1a1a1a); color: #eee; }
-    h1 { text-align: center; color: #00ff99; text-shadow: 0 0 10px #00ff99; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; border-radius: 8px; overflow: hidden; }
-    th, td { border: 1px solid #333; padding: 10px; text-align: center; }
-    th { background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); color: #ffcc00; cursor: pointer; }
-    tr:hover { background: rgba(255,255,255,0.05); }
-    .btn { background: #00ff99; color: #111; padding: 8px 12px; border: none; cursor: pointer; border-radius: 4px; transition: 0.2s; }
-    .btn:hover { transform: scale(1.05); box-shadow: 0 0 10px #00ff99; }
-    .btn-delete { background: #ff4444; color: white; }
-    .btn-delete:hover { box-shadow: 0 0 10px #ff4444; }
-    .form-box { display: none; background: rgba(0,0,0,0.7); padding: 20px; margin: 15px 0; border-radius: 10px; backdrop-filter: blur(15px); }
-    input, select { padding: 8px; margin: 5px; border-radius: 5px; border: none; outline: none; }
-    #profit, #summary { font-size: 1.1em; margin-top: 15px; text-align: right; }
-    #summary span { margin-right: 15px; }
+    :root{
+      --bg:#0f0f0f; --bg2:#1a1a1a; --card:#181818; --ink:#eee;
+      --accent:#00ff99; --accent2:#ffcc00; --danger:#ff4d4d; --muted:#888;
+      --border:#2b2b2b;
+    }
+    *{box-sizing:border-box}
+    body{margin:0; font-family:ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; background:linear-gradient(135deg,var(--bg),var(--bg2)); color:var(--ink); padding:22px;}
+    h1{margin:0 0 14px; text-align:center; color:var(--accent); text-shadow:0 0 8px var(--accent)}
+    .row{display:flex; gap:14px; flex-wrap:wrap}
+    .card{flex:1 1 380px; background:rgba(0,0,0,.55); border:1px solid var(--border); border-radius:12px; padding:14px; backdrop-filter: blur(10px)}
+    .card h3{margin:0 0 10px; color:var(--accent2)}
+    label{font-size:.9rem; color:#cfcfcf; display:inline-block; margin:6px 8px 6px 0}
+    input, select, textarea{background:#121212; color:var(--ink); border:1px solid var(--border); border-radius:8px; padding:10px; outline:none}
+    input:focus, select:focus, textarea:focus{border-color:#3b3b3b; box-shadow:0 0 0 2px rgba(255,255,255,.04)}
+    .grid{display:grid; grid-template-columns:repeat(4,minmax(120px,1fr)); gap:10px}
+    .btn{background:var(--accent); color:#0a0a0a; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; font-weight:600; transition:.18s}
+    .btn:hover{transform:translateY(-1px); box-shadow:0 0 10px var(--accent)}
+    .btn.alt{background:#222; color:#ddd; border:1px solid var(--border)}
+    .btn.danger{background:var(--danger); color:#fff}
+    .toolbar{display:flex; gap:10px; flex-wrap:wrap}
+    table{width:100%; border-collapse:collapse; margin-top:12px; background:#121212; border:1px solid var(--border); border-radius:10px; overflow:hidden}
+    thead th{background:#1c1c1c; color:var(--accent2); padding:10px; text-align:center; border-bottom:1px solid var(--border); position:sticky; top:0}
+    tbody td{padding:10px; text-align:center; border-top:1px solid var(--border)}
+    tbody tr:hover{background:#171717}
+    .chip{display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px; border:1px solid var(--border); background:#151515; font-size:.9rem}
+    .right{text-align:right}
+    .muted{color:#b9b9b9}
+    .statbar{display:flex; gap:10px; flex-wrap:wrap; margin-top:10px}
+    .stat{flex:1 1 220px; background:#141414; border:1px solid var(--border); border-radius:10px; padding:10px}
+    .stat h4{margin:0 0 6px; color:#dcdcdc; font-weight:600}
+    .stat p{margin:0; font-size:1.05rem}
+    .green{color:#74ffcf}
+    .red{color:#ff7f7f}
+    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace}
+    @media (max-width: 980px){ .grid{grid-template-columns:repeat(2,minmax(120px,1fr))} }
+    @media (max-width: 560px){ .grid{grid-template-columns:1fr} }
   </style>
 </head>
 <body>
-  <h1>💰 Balance Tracker</h1>
 
-  <button class="btn" onclick="toggleForm()">+ Add New</button>
+  <h1>💰 Balance Tracker — Multi-Currency + P&L</h1>
 
-  <div class="form-box" id="formBox">
-    <input type="date" id="date">
-    <select id="category">
-      <option value="">-- Select Category --</option>
-      <option value="Cash (THB)">Cash (THB)</option>
-      <option value="KBZPay (MMK)">KBZPay (MMK)</option>
-      <option value="Binance (USDT)">Binance (USDT)</option>
-      <option value="Binance (WLD)">Binance (WLD)</option>
-      <option value="Pexx Mastercard (USD)">Pexx Mastercard (USD)</option>
-    </select>
-    <select id="type">
-      <option value="Income">Income</option>
-      <option value="Expense">Expense</option>
-    </select>
-    <input type="number" id="amount" placeholder="Amount">
-    <input type="text" id="note" placeholder="Note">
-    <button class="btn" id="saveBtn" onclick="saveEntry()">Save</button>
-    <button class="btn btn-delete" onclick="toggleForm()">Cancel</button>
+  <!-- Rates + Quick Controls -->
+  <div class="row">
+    <div class="card">
+      <h3>📊 Exchange Rates</h3>
+      <div class="grid">
+        <div>
+          <label>1 THB = MMK</label>
+          <input id="rateTHB" type="number" step="0.01" value="137.5">
+        </div>
+        <div>
+          <label>1 USDT = MMK</label>
+          <input id="rateUSDT" type="number" step="0.01" value="4275">
+        </div>
+        <div>
+          <label>1 USD = MMK</label>
+          <input id="rateUSD" type="number" step="0.01" value="4275">
+        </div>
+        <div>
+          <label>Base P&L Currency</label>
+          <select id="baseCurrency">
+            <option value="MMK">MMK</option>
+            <option value="THB">THB</option>
+            <option value="USD">USD</option>
+            <option value="USDT">USDT</option>
+          </select>
+        </div>
+      </div>
+      <div class="toolbar" style="margin-top:10px">
+        <button class="btn" onclick="saveRates()">Save Rates</button>
+        <button class="btn alt" onclick="resetRates()">Reset Rates</button>
+        <button class="btn alt" onclick="clearAll()">Clear All Data</button>
+      </div>
+      <p class="muted" style="margin-top:8px">tips: THB↔MMK, USDT↔MMK, USD↔MMK only. USD≈USDT for now. You can change anytime — all totals recalc instantly.</p>
+    </div>
+
+    <!-- Entry Form -->
+    <div class="card">
+      <h3>➕ Add / Edit Entry</h3>
+      <div class="grid">
+        <div>
+          <label>Date</label>
+          <input id="date" type="date">
+        </div>
+        <div>
+          <label>Category</label>
+          <select id="category" onchange="suggestCurrency()">
+            <option value="">-- select --</option>
+            <option>Cash (THB)</option>
+            <option>KBZPay (MMK)</option>
+            <option>Binance (USDT)</option>
+            <option>Binance (WLD)</option>
+            <option>Pexx Mastercard (USD)</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div>
+          <label>Type</label>
+          <select id="type">
+            <option>Income</option>
+            <option>Expense</option>
+          </select>
+        </div>
+        <div>
+          <label>Amount</label>
+          <input id="amount" type="number" step="0.0001" placeholder="e.g. 11849">
+        </div>
+        <div>
+          <label>Currency</label>
+          <select id="currency">
+            <option>THB</option>
+            <option>MMK</option>
+            <option>USD</option>
+            <option>USDT</option>
+          </select>
+        </div>
+        <div style="grid-column: span 3;">
+          <label>Note</label>
+          <input id="note" type="text" placeholder="short note…">
+        </div>
+      </div>
+      <div class="toolbar" style="margin-top:10px">
+        <button id="saveBtn" class="btn" onclick="saveEntry()">Save</button>
+        <button class="btn alt" onclick="resetForm()">Cancel</button>
+      </div>
+      <p class="muted" style="margin-top:8px">pro tip: choose “Binance (WLD)” if you’re logging WLD as its <span class="mono">USDT</span> equivalent.</p>
+    </div>
   </div>
 
-  <table id="recordTable">
-    <thead>
-      <tr>
-        <th>Date</th>
-        <th>Category</th>
-        <th>Type</th>
-        <th>Amount</th>
-        <th>Note</th>
-        <th>Balance</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+  <!-- Records Table -->
+  <div class="card" style="margin-top:12px">
+    <h3>📒 Records</h3>
+    <div class="toolbar" style="margin-bottom:8px">
+      <span class="chip">Entries: <span id="count" class="mono">0</span></span>
+      <span class="chip">Base: <span id="baseBadge" class="mono">MMK</span></span>
+      <button class="btn alt" onclick="exportJSON()">Export JSON</button>
+      <button class="btn alt" onclick="exportCSV()">Export CSV</button>
+    </div>
+    <div style="overflow:auto">
+      <table id="table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Category</th>
+            <th>Type</th>
+            <th>Original</th>
+            <th>THB</th>
+            <th>MMK</th>
+            <th>USD</th>
+            <th>USDT</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
 
-  <div id="summary"></div>
-  <div id="profit">Net Profit/Loss: 0</div>
+  <!-- Totals / P&L -->
+  <div class="row" style="margin-top:12px">
+    <div class="card">
+      <h3>🧮 Totals by Currency</h3>
+      <div class="statbar">
+        <div class="stat"><h4>THB</h4><p class="mono" id="sumTHB">0.00</p></div>
+        <div class="stat"><h4>MMK</h4><p class="mono" id="sumMMK">0</p></div>
+        <div class="stat"><h4>USD</h4><p class="mono" id="sumUSD">0.00</p></div>
+        <div class="stat"><h4>USDT</h4><p class="mono" id="sumUSDT">0.00</p></div>
+      </div>
+      <p class="muted" style="margin-top:8px">totals are Income minus Expenses, converted per-row at current rates.</p>
+    </div>
+
+    <div class="card">
+      <h3>📈 Profit & Loss</h3>
+      <div class="statbar">
+        <div class="stat"><h4>Total Income (base)</h4><p class="mono green" id="incBase">0</p></div>
+        <div class="stat"><h4>Total Expenses (base)</h4><p class="mono red" id="expBase">0</p></div>
+        <div class="stat"><h4>Net P&L (base)</h4><p class="mono" id="netBase">0</p></div>
+      </div>
+      <p class="muted" style="margin-top:8px">“base” = the currency chosen in the rate box (default: MMK).</p>
+    </div>
+  </div>
 
   <script>
-    // Preload with your first dataset (10 Sep 2025)
-    let records = [
-      {date: "2025-09-10", category: "Cash (THB)", type: "Income", amount: 11849, note: "Wallet balance"},
-      {date: "2025-09-10", category: "KBZPay (MMK)", type: "Income", amount: 275230, note: "KBZPay balance"},
-      {date: "2025-09-10", category: "Binance (USDT)", type: "Income", amount: 76, note: "USDT balance"},
-      {date: "2025-09-10", category: "Binance (WLD)", type: "Income", amount: 39, note: "WLD coins"},
-      {date: "2025-09-10", category: "Pexx Mastercard (USD)", type: "Income", amount: 9.13, note: "Card balance"}
-    ];
+    // ===== Utilities =====
+    const $ = sel => document.querySelector(sel);
+    const todayISO = () => new Date().toISOString().slice(0,10);
+    const fmt = (n, d=2) => Number(n).toLocaleString(undefined, {minimumFractionDigits:d, maximumFractionDigits:d});
+    const fmt0 = n => Number(n).toLocaleString(undefined, {maximumFractionDigits:0});
 
+    // ===== LocalStorage Keys =====
+    const LSK_RECORDS = 'bt_records_v2';
+    const LSK_RATES   = 'bt_rates_v2';
+
+    // ===== State =====
+    let records = [];
     let editIndex = -1;
 
-    function toggleForm(index=null) {
-      let box = document.getElementById("formBox");
-      if (index !== null) {
-        let r = records[index];
-        document.getElementById("date").value = r.date;
-        document.getElementById("category").value = r.category;
-        document.getElementById("type").value = r.type;
-        document.getElementById("amount").value = r.amount;
-        document.getElementById("note").value = r.note;
-        editIndex = index;
-        document.getElementById("saveBtn").innerText = "Update";
-      } else {
-        document.getElementById("date").value = "";
-        document.getElementById("category").value = "";
-        document.getElementById("type").value = "Income";
-        document.getElementById("amount").value = "";
-        document.getElementById("note").value = "";
-        editIndex = -1;
-        document.getElementById("saveBtn").innerText = "Save";
+    let rates = {
+      THB_MMk: 137.5,
+      USDT_MMK: 4275,
+      USD_MMK: 4275,
+      base: 'MMK'
+    };
+
+    // ===== Init =====
+    function loadRates(){
+      const saved = localStorage.getItem(LSK_RATES);
+      if(saved){
+        try{
+          const r = JSON.parse(saved);
+          rates = {...rates, ...r};
+        }catch(e){}
       }
-      box.style.display = (box.style.display === "block") ? "none" : "block";
+      $('#rateTHB').value = rates.THB_MMk;
+      $('#rateUSDT').value = rates.USDT_MMK;
+      $('#rateUSD').value = rates.USD_MMK;
+      $('#baseCurrency').value = rates.base;
+      $('#baseBadge').textContent = rates.base;
     }
 
-    function saveEntry() {
-      let date = document.getElementById("date").value;
-      let category = document.getElementById("category").value;
-      let type = document.getElementById("type").value;
-      let amount = parseFloat(document.getElementById("amount").value);
-      let note = document.getElementById("note").value;
+    function loadRecords(){
+      const saved = localStorage.getItem(LSK_RECORDS);
+      records = saved ? JSON.parse(saved) : [];
+      $('#date').value = todayISO();
+    }
 
-      if (!date || !category || isNaN(amount)) {
-        alert("Please fill all fields!");
+    function saveRates(){
+      rates.THB_MMk = parseFloat($('#rateTHB').value)||137.5;
+      rates.USDT_MMK = parseFloat($('#rateUSDT').value)||4275;
+      rates.USD_MMK = parseFloat($('#rateUSD').value)||4275;
+      rates.base = $('#baseCurrency').value || 'MMK';
+      localStorage.setItem(LSK_RATES, JSON.stringify(rates));
+      $('#baseBadge').textContent = rates.base;
+      render();
+    }
+
+    function resetRates(){
+      $('#rateTHB').value = 137.5;
+      $('#rateUSDT').value = 4275;
+      $('#rateUSD').value = 4275;
+      $('#baseCurrency').value = 'MMK';
+      saveRates();
+    }
+
+    function persist(){
+      localStorage.setItem(LSK_RECORDS, JSON.stringify(records));
+    }
+
+    function clearAll(){
+      if(confirm('Delete ALL entries and reset?')){
+        records = [];
+        persist();
+        render();
+      }
+    }
+
+    // Auto-suggest currency from category
+    function suggestCurrency(){
+      const cat = $('#category').value;
+      const cur = $('#currency');
+      if(cat.includes('Cash (THB)')) cur.value = 'THB';
+      else if(cat.includes('KBZPay')) cur.value = 'MMK';
+      else if(cat.includes('USDT')) cur.value = 'USDT';
+      else if(cat.includes('WLD')) cur.value = 'USDT'; // treat WLD as USDT equivalent input
+      else if(cat.includes('Pexx')) cur.value = 'USD';
+    }
+
+    // ===== Conversion =====
+    function toAll(amount, currency){
+      let mmk=0, thb=0, usd=0, usdt=0;
+      const rTHB = rates.THB_MMk;
+      const rU = rates.USDT_MMK;
+      const rUSD = rates.USD_MMK;
+
+      if(currency==='MMK'){
+        mmk = amount;
+        thb = amount / rTHB;
+        usd = amount / rUSD;
+        usdt = amount / rU;
+      } else if(currency==='THB'){
+        thb = amount;
+        mmk = amount * rTHB;
+        usd = mmk / rUSD;
+        usdt = mmk / rU;
+      } else if(currency==='USD'){
+        usd = amount;
+        mmk = amount * rUSD;
+        thb = mmk / rTHB;
+        usdt = mmk / rU;
+      } else if(currency==='USDT'){
+        usdt = amount;
+        mmk = amount * rU;
+        thb = mmk / rTHB;
+        usd = mmk / rUSD;
+      }
+      return {mmk, thb, usd, usdt};
+    }
+
+    function toBase(val){
+      // convert object {mmk,thb,usd,usdt} to selected base number
+      switch(rates.base){
+        case 'THB': return val.thb;
+        case 'USD': return val.usd;
+        case 'USDT': return val.usdt;
+        default: return val.mmk;
+      }
+    }
+
+    // ===== CRUD =====
+    function resetForm(){
+      editIndex = -1;
+      $('#saveBtn').textContent = 'Save';
+      $('#date').value = todayISO();
+      $('#category').value = '';
+      $('#type').value = 'Income';
+      $('#amount').value = '';
+      $('#currency').value = 'THB';
+      $('#note').value = '';
+    }
+
+    function saveEntry(){
+      const date = $('#date').value;
+      const category = $('#category').value;
+      const type = $('#type').value;
+      const amount = parseFloat($('#amount').value);
+      const currency = $('#currency').value;
+      const note = $('#note').value.trim();
+
+      if(!date || !category || !currency || isNaN(amount)){
+        alert('Please fill Date, Category, Amount, Currency.');
         return;
       }
 
-      let entry = {date, category, type, amount, note};
+      const entry = {date, category, type, amount, currency, note};
 
-      if (editIndex >= 0) {
+      if(editIndex >= 0){
         records[editIndex] = entry;
         editIndex = -1;
+        $('#saveBtn').textContent = 'Save';
       } else {
         records.push(entry);
       }
-
-      renderTable();
-      toggleForm();
+      persist();
+      resetForm();
+      render();
     }
 
-    function deleteEntry(index) {
-      if (confirm("Delete this entry?")) {
-        records.splice(index, 1);
-        renderTable();
+    function editEntry(i){
+      const r = records[i];
+      editIndex = i;
+      $('#saveBtn').textContent = 'Update';
+      $('#date').value = r.date;
+      $('#category').value = r.category;
+      $('#type').value = r.type;
+      $('#amount').value = r.amount;
+      $('#currency').value = r.currency;
+      $('#note').value = r.note || '';
+    }
+
+    function delEntry(i){
+      if(confirm('Delete this entry?')){
+        records.splice(i,1);
+        persist();
+        render();
       }
     }
 
-    function renderTable() {
-      let tbody = document.querySelector("#recordTable tbody");
-      tbody.innerHTML = "";
-      let balance = 0, income = 0, expense = 0;
-
-      records.forEach((r,index)=>{
-        if (r.type === "Income") { balance += r.amount; income += r.amount; }
-        else { balance -= r.amount; expense += r.amount; }
-
-        tbody.innerHTML += `
-          <tr>
-            <td>${r.date}</td>
-            <td>${r.category}</td>
-            <td>${r.type}</td>
-            <td>${r.amount}</td>
-            <td>${r.note}</td>
-            <td>${balance}</td>
-            <td>
-              <button class="btn" onclick="toggleForm(${index})">Edit</button>
-              <button class="btn btn-delete" onclick="deleteEntry(${index})">Delete</button>
-            </td>
-          </tr>`;
+    // ===== Export =====
+    function exportJSON(){
+      const blob = new Blob([JSON.stringify({rates, records}, null, 2)], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      dl(url, 'balance-tracker.json');
+    }
+    function exportCSV(){
+      const headers = ['date','category','type','amount','currency','note','thb','mmk','usd','usdt'];
+      const rows = [headers.join(',')];
+      records.forEach(r=>{
+        const c = toAll(r.amount, r.currency);
+        rows.push([
+          r.date, wrap(r.category), r.type, r.amount, r.currency, wrap(r.note||''),
+          c.thb.toFixed(4), Math.round(c.mmk), c.usd.toFixed(4), c.usdt.toFixed(4)
+        ].join(','));
       });
-
-      document.getElementById("summary").innerHTML =
-        `<span>Total Income: ${income}</span> 
-         <span>Total Expenses: ${expense}</span> 
-         <span>Total Balance: ${balance}</span>`;
-      document.getElementById("profit").innerText = "Net Profit/Loss: " + (income - expense);
+      const blob = new Blob([rows.join('\n')], {type:'text/csv'});
+      const url = URL.createObjectURL(blob);
+      dl(url, 'balance-tracker.csv');
+    }
+    function wrap(s){ return `"${String(s).replaceAll('"','""')}"`; }
+    function dl(url, name){
+      const a = document.createElement('a');
+      a.href = url; a.download = name; document.body.appendChild(a); a.click();
+      setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 0);
     }
 
-    renderTable();
+    // ===== Render =====
+    function render(){
+      // counts
+      $('#count').textContent = records.length;
+
+      // rows
+      const tb = $('#tbody');
+      tb.innerHTML = '';
+
+      // totals (Income=+, Expense=-) in each currency
+      let sumTHB=0, sumMMK=0, sumUSD=0, sumUSDT=0;
+      let incBase=0, expBase=0;
+
+      records
+        .slice()
+        .sort((a,b)=> (a.date>b.date?1:a.date<b.date?-1:0))  // sort by date asc
+        .forEach((r, i)=>{
+          const c = toAll(r.amount, r.currency);
+          const sign = (r.type==='Income') ? 1 : -1;
+
+          sumTHB  += sign * c.thb;
+          sumMMK  += sign * c.mmk;
+          sumUSD  += sign * c.usd;
+          sumUSDT += sign * c.usdt;
+
+          const baseVal = toBase(c) * sign;
+          if(sign>0) incBase += baseVal; else expBase += Math.abs(baseVal);
+
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td class="mono">${r.date}</td>
+            <td>${r.category}</td>
+            <td>${r.type}</td>
+            <td class="mono">${fmt(r.amount, 4)} ${r.currency}</td>
+            <td class="mono">${fmt(c.thb)}</td>
+            <td class="mono">${fmt0(c.mmk)}</td>
+            <td class="mono">${fmt(c.usd, 4)}</td>
+            <td class="mono">${fmt(c.usdt, 4)}</td>
+            <td>
+              <button class="btn alt" onclick="editEntry(${records.indexOf(r)})">Edit</button>
+              <button class="btn danger" onclick="delEntry(${records.indexOf(r)})">Delete</button>
+            </td>
+          `;
+          tb.appendChild(row);
+        });
+
+      // totals
+      $('#sumTHB').textContent  = fmt(sumTHB);
+      $('#sumMMK').textContent  = fmt0(sumMMK);
+      $('#sumUSD').textContent  = fmt(sumUSD, 4);
+      $('#sumUSDT').textContent = fmt(sumUSDT, 4);
+
+      $('#incBase').textContent = prettifyBase(incBase);
+      $('#expBase').textContent = prettifyBase(expBase);
+      $('#netBase').textContent = prettifyBase(incBase - expBase);
+    }
+
+    function prettifyBase(n){
+      switch(rates.base){
+        case 'THB':  return fmt(n)+' THB';
+        case 'USD':  return fmt(n,4)+' USD';
+        case 'USDT': return fmt(n,4)+' USDT';
+        default:     return fmt0(n)+' MMK';
+      }
+    }
+
+    // ===== Boot =====
+    loadRates();
+    loadRecords();
+    render();
   </script>
 </body>
 </html>
